@@ -38,7 +38,7 @@ def main():
     Voltage_Limit_To_Shutdown_Raspi = 14.25
 
     Number_Of_Videos = 0
-    Duration_of_Video = 60
+    Duration_of_Video = 600
     Frame_Per_Second = 5
     # resolution='1920x1080'
     # resolution_2='1600x896'
@@ -190,10 +190,11 @@ def main():
             
 # Here we dont want that he send the real epoch_restart because we want that once the voltage is higher than 15.1
 # the transistor is switch on again and allow raspi to reboot, not waiting that the time condition is reached. Thus
-# I put 1600000000 that is a non sens epoch (that will always be lower than the current time; thus the condition that 
-# the restart epoch is lower than the current epoch will always be reached)
+# I put 1600000001 that is a non sens epoch (that will always be lower than the current time; thus the condition that 
+# the restart epoch is lower than the current epoch will always be reached)? Don't put 1600000000 because that remove
+the esp log file (see condition above). 1600000001 should do the trick.
 
-            Send_Epoch_To_Esp32(ser,1600000000)
+            Send_Epoch_To_Esp32(ser,1600000001)
             
             print("shutdown the pi in 10 sec")
             with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
