@@ -9,36 +9,34 @@ from math import nan
 
 def main():
     
-    print("ARE YOU SURE RELATIVE AND ABSOLUTE TIME ARE CORRECTLY SET ?")
-    time.sleep(35) # let raspi config everything at boot (needed when launch from rc.local)
     
     call(["sudo", "/opt/vc/bin/tvservice", "-o"]) # stop hdmi
     Open_Shared_Folder()# to write video on the internet box
     Authorize_To_Write_Files()
 
-    # Variables
+#     # Variables
+#     
+#     ABSOLUTE_STOP = True
+#     ABSOLUTE_START = True
+#      
+# #     ABSOLUTE_STOP = False
+# #     ABSOLUTE_START = False
+#     
+#     day_to_stop = 0
+#     hour_to_stop = 21
+#     minute_to_stop = 0
+#     
+#     day_to_restart = 1
+#     hour_to_restart = 18
+#     minute_to_restart = 0
+#     
+#     epoch_to_stop=Compute_Hour_To_Stop(hour_to_stop,minute_to_stop,day_to_stop,ABSOLUTE_STOP)
+#     epoch_to_restart=Compute_Hour_To_Restart(hour_to_restart,minute_to_restart,day_to_restart,ABSOLUTE_START)
     
-    ABSOLUTE_STOP = True
-    ABSOLUTE_START = True
-     
-#     ABSOLUTE_STOP = False
-#     ABSOLUTE_START = False
-    
-    day_to_stop = 0
-    hour_to_stop = 21
-    minute_to_stop = 0
-    
-    day_to_restart = 1
-    hour_to_restart = 18
-    minute_to_restart = 0
-    
-    epoch_to_stop=Compute_Hour_To_Stop(hour_to_stop,minute_to_stop,day_to_stop,ABSOLUTE_STOP)
-    epoch_to_restart=Compute_Hour_To_Restart(hour_to_restart,minute_to_restart,day_to_restart,ABSOLUTE_START)
-    
-    Voltage_Limit_To_Shutdown_Raspi = 14.5
+
 
     Number_Of_Videos = 0
-    Duration_of_Video = 600
+    Duration_of_Video = 60
     Frame_Per_Second = 5
     # resolution='1920x1080'
     # resolution_2='1600x896'
@@ -50,8 +48,6 @@ def main():
     Global_Iteration = 0
     
     
-    ser=serial.Serial('/dev/ttyAMA0',9600, timeout=2) #serial communication with esp32
-    ser.flushInput()
     
     Initial_T = datetime.datetime.now()
     
@@ -60,194 +56,24 @@ def main():
             
     # specific log file of a raspi session (remove it each time raspi boot)
             
-    if os.path.isfile('//home/pi/mnt/USB_Cam_Mangeoire/Data_Raspi_Session.txt'):
-        os.remove("//home/pi/mnt/USB_Cam_Mangeoire/Data_Raspi_Session.txt")        
-    
     
     while Number_Of_Videos < 5000:
         
         Global_Iteration = Global_Iteration + 1 
         
         time.sleep(0.1)
-        Number_Of_Videos=len(os.listdir("//home/pi/mnt/USB_Cam_Mangeoire/Video"))
+        Number_Of_Videos=len(os.listdir("//home/pi/mnt/USB_Cam_Mangeoire/Video_Secteur"))
         time.sleep(0.1)
         
-        Send_String=""
-               
-       # this loop allows to discard bad received line by continuing if an error appears
-        while 1:
-
-           if ser.in_waiting:
-               try:
-                   Send_String=ser.readline().decode() # received data from esp32
-                   Send_String = Send_String.replace('\0', '') # solving a bug that appears seomtimes
-                   
-               except:
-                   print("Continue of ser.readline() triggered")
-                   print(Send_String)
-                   with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                       Data.write("Continue of ser.readline() triggered" + "\n" )
-                       Data.write(Send_String + "\n")
-                       
-                   Global_Iteration = Global_Iteration - 1
-                   continue
-               break
- 
-
- #sometimes the line is not correctly formated (bad receiving): the try catch 
- # allows to continue otherwise.
-        try:
-                        
-            floats = [float(x) for x in Send_String.split(",")]
-                        
-        except:
-                      
-            print("Continue of float triggered")
-            print(Send_String)
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                Data.write("Continue of float triggered" + "\n" )
-                Data.write(Send_String + "\n")
-                
-            Global_Iteration = Global_Iteration - 1
-            continue    
-
-        
-# sometimes the number of float is not correct. Continue if it appears.
-
-        if len(floats) < 7 : #sometimes error due to floats size inf to 3
-    
-            print(len(floats))
-          
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                  
-                Data.write("Continue of LENGTH float triggered" + "\n" )
-                Data.write(Send_String + "\n")
-                Data.write("Lenght float: "+ str(len(floats)) + "\n")
-            
-            Global_Iteration = Global_Iteration - 1
-                  
-            continue
-
-# parse all data from the esp32  sent line into float.
-#                 
-        Transistor_State=floats[0]
-        Reboot_Reason=floats[1]
-        Raspi_Voltage=floats[2]
-        Raspi_Current=floats[3]   
-        Solar_Current=floats[4]
-        Current_Epoch=floats[5]
-        Epoch_Start=floats[6]
-        
-        # specific log file that is removed when esp is reboot. the epoch 160000... is sent from 
-        # esp32 and when set like that, it means that it just start ( the epoch 0  doesn't work
-        # for unknown reasons)
-
-        if Epoch_Start == 1600000000 and Global_Iteration == 1:
-            
-            if os.path.isfile('//home/pi/mnt/USB_Cam_Mangeoire/Data_ESP_Session.txt'):
-                os.remove("//home/pi/mnt/USB_Cam_Mangeoire/Data_ESP_Session.txt") 
-            
-        #  to obtain data from the night (when raspi was off and esp32 continue monitoring data)
-        if Transistor_State == 0 and Reboot_Reason > 0:
-            Received_All_Transistor_Off_Data_from_ESP32(ser)
-            
-            print("Continue of Transistor_OFF_Transfert triggered")
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                Data.write("Continue of Transistor_OFF_Transfert triggered" + "\n" )
-                
-            ser.flushInput()
-            
-            continue
-        
-       # add somes informations in the line that gonna be write in the data text file.
-
-        Send_String= str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + ',' + \
-                     str(round(datetime.datetime.now().timestamp()-Initial_T.timestamp(),2)) + ','\
-                     + str(Number_Of_Videos) + ',' + str(Global_Iteration) + ','\
-                     + Send_String 
-        
-        print(Send_String)
-        
-        # write the data line in the 3 logs files.
-
-        with open("//home/pi/mnt/USB_Cam_Mangeoire/Data_All.txt","a")  as Data:
-             Data.write(Send_String)
-        
-        with open("//home/pi/mnt/USB_Cam_Mangeoire/Data_ESP_Session.txt","a")  as Data:
-             Data.write(Send_String)
-             
-             
-        with open("//home/pi/mnt/USB_Cam_Mangeoire/Data_Raspi_Session.txt","a")  as Data:
-             Data.write(Send_String)
-        
-        # shutdown the raspi if voltage reach the limit
-
-        if Raspi_Voltage < (Voltage_Limit_To_Shutdown_Raspi) :            
-            
-            print("Entering the close condition due to Voltage limit measured at " + str(Raspi_Voltage) + " at "  + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("Entering the close condition due to Voltage limit measured at " + str(Raspi_Voltage) + " at "  + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))+ "\n" )
-            
-# Here we dont want that he send the real epoch_restart because we want that once the voltage is higher than 15.1
-# the transistor is switch on again and allow raspi to reboot, not waiting that the time condition is reached. Thus
-# I put 1600000001 that is a non sens epoch (that will always be lower than the current time; thus the condition that 
-# the restart epoch is lower than the current epoch will always be reached)? Don't put 1600000000 because that remove
-# the esp log file (see condition above). 1600000001 should do the trick.
-
-            Send_Epoch_To_Esp32(ser,1600000001)
-            
-            print("shutdown the pi in 10 sec")
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("shutdown the pi in 10 sec" + "\n" )
-                 
-            time.sleep(10)
-            print("shutdown the pi")
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("shutdown the pi" + "\n" + "\n" )
-
-            # not particularly beautifull but the only way to stop the python script
-            # and allows to switch off the pi when launch from rc.local (root)
-
-            run("sudo pkill -1 python3 ; sleep 10 ; sudo shutdown -h now", shell=True) # shutdown doesn't work without this command. dont know why.
-            time.sleep(20)
-            
-# shutdown the raspi if the time limit is reached 
-
-        elif round(time.time()) > epoch_to_stop:
-            
-            print("Entering the close condition due to Time limit  at " + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + " at voltage "+ str(Raspi_Voltage))
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("Entering the close condition due to Time limit  at " + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + " at voltage "+ str(Raspi_Voltage) + "\n" )
-            
-            Send_Epoch_To_Esp32(ser,epoch_to_restart)
-            
-            
-            print("shutdown the pi in 10 sec")
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("shutdown the pi in 10 sec" + "\n" )
-                 
-            time.sleep(10)
-            print("shutdown the pi")
-            with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-                 Data.write("shutdown the pi" + "\n" + "\n")
-            
-            run("sudo pkill -1 python3 ; sleep 10 ; sudo shutdown -h now", shell=True) # shutdown doesn't work without this command. dont know why.
-            time.sleep(20)
-        
-        
-        time.sleep(1)
         Iteration_Of_Video=Get_Iteration_Of_Video() #based on iteration of the last modified file
         print(Iteration_Of_Video)
         Lead_Zero_Iteration=str(Iteration_Of_Video).zfill(5)
-        video_name= "//home/pi/mnt/USB_Cam_Mangeoire/Video/video_" + Lead_Zero_Iteration + ".mp4"
+        video_name= "//home/pi/mnt/USB_Cam_Mangeoire/Video_Secteur/video_" + Lead_Zero_Iteration + ".mp4"
         print(video_name)
-        with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
-            Data.write("Beginning " + video_name + " at " + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + " at voltage "+ str(Raspi_Voltage) + "\n" ) 
-        
-        # this ser flush is needed to avoid that serial buffer is filled if esp32 send data at a higher
-        # rate (often the case; 10 sec vs  1minutes). Note that the time that gonna be keept maybe innacurate
-        # at 1 minute of std.       
-        ser.flushInput() 
+#         with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
+#             Data.write("Beginning " + video_name + " at " + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + "\n" ) 
+#         
+
         
         t = time.time()
         print("Acquiring video...")
@@ -353,7 +179,7 @@ def Compute_Hour_To_Stop(hour_to_stop, minute_to_stop,day_to_stop,ABSOLUTE_STOP)
 def Get_Iteration_Of_Video():
 
 
-    list_of_files = glob.glob('//home/pi/mnt/USB_Cam_Mangeoire/Video/*') # * means all if need specific format then *.csv
+    list_of_files = glob.glob('//home/pi/mnt/USB_Cam_Mangeoire/Video_Secteur/*') # * means all if need specific format then *.csv
 
 
     if  len(list_of_files) > 0    : 

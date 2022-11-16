@@ -21,11 +21,12 @@ def Open_Shared_Folder():
 
 Open_Shared_Folder()
 
-Duration_of_Video = 10
+Duration_of_Video = 90
+
 Frame_Per_Second = 5
 #resolution='1920x1080'
-#esolution='640x480'
-resolution='1600x896'
+resolution='640x480'
+#resolution='1600x896'
 #resolution='1024x768'
 Bitrate = '2M'
 Global_Iteration = 0
@@ -60,8 +61,8 @@ run([
 video_name,
 '-y', #erase the file if aleady exist
 ],
-stdout=DEVNULL,# removing output in the terminal: comment if bug to see stdout
-stderr=STDOUT,
+#stdout=DEVNULL,# removing output in the terminal: comment if bug to see stdout
+#stderr=STDOUT,
 #        stderr=DEVNULL,    
 )
 
