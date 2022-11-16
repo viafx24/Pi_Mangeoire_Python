@@ -25,11 +25,11 @@ def main():
 #     ABSOLUTE_START = False
     
     day_to_stop = 0
-    hour_to_stop = 21
+    hour_to_stop = 14
     minute_to_stop = 0
     
     day_to_restart = 1
-    hour_to_restart = 18
+    hour_to_restart = 11
     minute_to_restart = 0
     
     epoch_to_stop=Compute_Hour_To_Stop(hour_to_stop,minute_to_stop,day_to_stop,ABSOLUTE_STOP)
@@ -38,7 +38,7 @@ def main():
     Voltage_Limit_To_Shutdown_Raspi = 14.5
 
     Number_Of_Videos = 0
-    Duration_of_Video = 600
+    Duration_of_Video = 60
     Frame_Per_Second = 5
     # resolution='1920x1080'
     # resolution_2='1600x896'
@@ -69,7 +69,7 @@ def main():
         Global_Iteration = Global_Iteration + 1 
         
         time.sleep(0.1)
-        Number_Of_Videos=len(os.listdir("//home/pi/mnt/USB_Cam_Mangeoire/Video"))
+        Number_Of_Videos=len(os.listdir("//home/pi/mnt/USB_Cam_Mangeoire/Video_Pi_Noir"))
         time.sleep(0.1)
         
         Send_String=""
@@ -239,7 +239,7 @@ def main():
         Iteration_Of_Video=Get_Iteration_Of_Video() #based on iteration of the last modified file
         print(Iteration_Of_Video)
         Lead_Zero_Iteration=str(Iteration_Of_Video).zfill(5)
-        video_name= "//home/pi/mnt/USB_Cam_Mangeoire/Video/video_" + Lead_Zero_Iteration + ".mp4"
+        video_name= "//home/pi/mnt/USB_Cam_Mangeoire/Video_Pi_Noir/video_" + Lead_Zero_Iteration + ".mp4"
         print(video_name)
         with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
             Data.write("Beginning " + video_name + " at " + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")) + " at voltage "+ str(Raspi_Voltage) + "\n" ) 
@@ -353,7 +353,7 @@ def Compute_Hour_To_Stop(hour_to_stop, minute_to_stop,day_to_stop,ABSOLUTE_STOP)
 def Get_Iteration_Of_Video():
 
 
-    list_of_files = glob.glob('//home/pi/mnt/USB_Cam_Mangeoire/Video/*') # * means all if need specific format then *.csv
+    list_of_files = glob.glob('//home/pi/mnt/USB_Cam_Mangeoire/Video_Pi_Noir/*') # * means all if need specific format then *.csv
 
 
     if  len(list_of_files) > 0    : 
