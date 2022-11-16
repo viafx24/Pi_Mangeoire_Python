@@ -24,6 +24,21 @@ def main():
 #     ABSOLUTE_STOP = False
 #     ABSOLUTE_START = False
     
+    # Timeslot mode will only respect indicated time and will not
+    # reboot raspi if voltage increase upon 15V. Adapted if one want
+    # only image acquistion during 6ham to 8ham in the morning.
+    MODE = "TIMESLOT"
+
+    # Max mode will try to  respect time indicated but will always
+    # reboot the raspi and restart acquisition if voltage cross 15V.
+    # This mean that if it reboot the day after, time indicated may not
+    # be respect and the PI may enter in a loop where it alwyas stopped
+    # du to voltage et not due to time limit reached. Hence, not respecting
+    # wanted voltage. This mode if adapted if one want the maximum possible
+    # acquisition depending of sun energy provided to the battery.
+    # for instance, 8Am to 20pm indicated as time limit and max mode.
+    MODE = "MAX"
+
     day_to_stop = 0
     hour_to_stop = 14
     minute_to_stop = 0
@@ -188,13 +203,19 @@ def main():
             with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
                  Data.write("Entering the close condition due to Voltage limit measured at " + str(Raspi_Voltage) + " at "  + str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))+ "\n" )
             
-# Here we dont want that he send the real epoch_restart because we want that once the voltage is higher than 15.1
+# In Max mode, Here we dont want that he send the real epoch_restart because we want that once the voltage is higher than 15.1
 # the transistor is switch on again and allow raspi to reboot, not waiting that the time condition is reached. Thus
 # I put 1600000001 that is a non sens epoch (that will always be lower than the current time; thus the condition that 
 # the restart epoch is lower than the current epoch will always be reached)? Don't put 1600000000 because that remove
 # the esp log file (see condition above). 1600000001 should do the trick.
 
-            Send_Epoch_To_Esp32(ser,1600000001)
+# in timeslot mode, if the voltage cross 15V, it doesn't switch on again 
+# the raspi, it wait until the epoch_to_restart is reached.
+
+            if MODE == "TIMESLOT":
+                Send_Epoch_To_Esp32(ser,epoch_to_restart)
+            elif MODE == "MAX":
+                Send_Epoch_To_Esp32(ser,1600000001)
             
             print("shutdown the pi in 10 sec")
             with open("//home/pi/mnt/USB_Cam_Mangeoire/Log.txt","a")  as Data:
